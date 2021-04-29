@@ -23,10 +23,10 @@ class ExamplePage extends StatefulWidget {
 }
 
 class _ExamplePageState extends State<ExamplePage> {
-  bool _finished;
-  PainterController _controller;
-  List<PathPoints> _pathPonts;
-  MyPaths _myNote;
+  late bool _finished;
+  late PainterController _controller;
+  late List<PathPoints> _pathPonts;
+  late MyPaths _myNote;
 
   @override
   void initState() {
@@ -84,10 +84,15 @@ class _ExamplePageState extends State<ExamplePage> {
               setState(() {
                 _finished = true;
               });
-              _pathPonts = new List<PathPoints>();
+              _pathPonts = [];
               _pathPonts = _controller.getPathPoints();
 
-              _myNote = new MyPaths();
+              _myNote = new MyPaths(
+                  width: 0,
+                  height: 0,
+                  backGroundColor: 0,
+                  pathPoints: []
+              );
               _myNote = _controller.getMyPaths();
               var n = jsonEncode(_myNote);
               print(n);

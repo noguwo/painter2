@@ -2,7 +2,6 @@ library painter;
 
 import 'dart:convert';
 
-import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart' as mat show Image;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart' hide Image;
@@ -55,7 +54,7 @@ class _PainterState extends State<Painter> {
           alignment: FractionalOffset.center,
           fit: StackFit.expand,
           children: <Widget>[
-            widget.painterController.backgroundImage,
+            widget.painterController.backgroundImage!,
             GestureDetector(
               child: child,
               onPanStart: _onPanStart,
@@ -96,7 +95,7 @@ class _PainterState extends State<Painter> {
 class _PainterPainter extends CustomPainter {
   final _PathHistory _path;
 
-  _PainterPainter(this._path, {Listenable repaint}) : super(repaint: repaint);
+  _PainterPainter(this._path, {required Listenable repaint}) : super(repaint: repaint);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -108,30 +107,35 @@ class _PainterPainter extends CustomPainter {
 }
 
 class _PathHistory {
-  List<MapEntry<Path, Paint>> _paths;
-  List<MapEntry<Path, Paint>> _undone;
-  Paint currentPaint;
-  Paint _backgroundPaint;
-  bool _inDrag;
-  double _width;
-  double _height;
-  double _startX; //start X with a tap
-  double _startY; //start Y with a tap
+  late List<MapEntry<Path, Paint>> _paths;
+  late List<MapEntry<Path, Paint>> _undone;
+  late Paint currentPaint;
+  late Paint _backgroundPaint;
+  late bool _inDrag;
+  late double _width;
+  late double _height;
+  late double _startX; //start X with a tap
+  late double _startY; //start Y with a tap
   bool _startFlag = false;
   bool _erase = false;
   double _eraseArea = 1.0;
   bool _pathFound = false;
-  List<PathPoints> _pathPoints;
-  List<PathPoints> _pathPointsUnDone;
-  MyPaths _myPaths;
-  bool _updated;
+  late List<PathPoints> _pathPoints;
+  late List<PathPoints> _pathPointsUnDone;
+  late MyPaths _myPaths;
+  late bool _updated;
 
   _PathHistory() {
-    _paths = List<MapEntry<Path, Paint>>();
-    _undone = List<MapEntry<Path, Paint>>();
-    _pathPoints = List<PathPoints>();
-    _pathPointsUnDone = List<PathPoints>();
-    _myPaths = MyPaths();
+    _paths = [];
+    _undone = [];
+    _pathPoints = [];
+    _pathPointsUnDone = [];
+    _myPaths = MyPaths(
+        height: 0,
+        width: 0,
+        backGroundColor: 0,
+        pathPoints: []
+    );
     _inDrag = false;
     _backgroundPaint = Paint();
     _updated = false;
@@ -182,7 +186,7 @@ class _PathHistory {
     Path path = Path();
     Paint paint = Paint();
 
-    paint.style = getPaintingStyle(pathPoints.paintingStyle);
+    paint.style = getPaintingStyle(pathPoints.paintingStyle)!;
     paint.strokeWidth = pathPoints.lineThicknes;
     paint.color = Color(pathPoints.lineColor);
 
@@ -202,7 +206,7 @@ class _PathHistory {
       }
   }
 
-  PaintingStyle getPaintingStyle(String paintingStyleAsString) {
+  PaintingStyle? getPaintingStyle(String paintingStyleAsString) {
     for (PaintingStyle element in PaintingStyle.values) {
       if (element.toString() == paintingStyleAsString) {
         return element;
@@ -222,15 +226,16 @@ class _PathHistory {
       _startY = startPoint.dy;
 
       if(!_erase) {
-        PathPoints pathPoints = PathPoints();
-        pathPoints.startX = startPoint.dx;
-        pathPoints.startY = startPoint.dy;
-        pathPoints.lineToX = new List<double>();
-        pathPoints.lineToY = new List<double>();
-        pathPoints.lineThicknes = currentPaint.strokeWidth;
-        pathPoints.lineColor = currentPaint.color.value;
-        pathPoints.paintingStyle = currentPaint.style.toString();
-        pathPoints.singlePoint = true;
+        PathPoints pathPoints = PathPoints(
+            startX: startPoint.dx,
+            startY: startPoint.dy,
+            lineToX: [],
+            lineToY: [],
+            lineThicknes: currentPaint.strokeWidth,
+            lineColor: currentPaint.color.value,
+            paintingStyle: currentPaint.style.toString(),
+            singlePoint: true
+        );
         _pathPoints.add(pathPoints);
 
         Path path = Path();
@@ -317,12 +322,12 @@ class _PathHistory {
 class PainterController extends ChangeNotifier {
   Color _drawColor = Color.fromARGB(255, 0, 0, 0);
   Color _backgroundColor = Color.fromARGB(255, 255, 255, 255);
-  mat.Image _bgimage;
+  mat.Image? _bgimage;
 
   double _thickness = 1.0;
   double _erasethickness = 1.0;
-  _PathHistory _pathHistory;
-  GlobalKey _globalKey;
+  late _PathHistory _pathHistory;
+  late GlobalKey _globalKey;
 
   PainterController() {
     _pathHistory = _PathHistory();
@@ -340,8 +345,8 @@ class PainterController extends ChangeNotifier {
     _updatePaint();
   }
 
-  mat.Image get backgroundImage => _bgimage;
-  set backgroundImage(mat.Image image) {
+  mat.Image? get backgroundImage => _bgimage;
+  set backgroundImage(mat.Image? image) {
     _bgimage = image;
     _updatePaint();
   }
@@ -450,10 +455,10 @@ class PainterController extends ChangeNotifier {
 
   Future<Uint8List> exportAsPNGBytes() async {
     //TODO: check boundary on null!
-    RenderRepaintBoundary boundary =
-        _globalKey.currentContext.findRenderObject();
+    RenderRepaintBoundary? boundary =
+        _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
     Image image = await boundary.toImage();
-    ByteData byteData = await image.toByteData(format: ImageByteFormat.png);
+    ByteData byteData = (await image.toByteData(format: ImageByteFormat.png))!;
     return byteData.buffer.asUint8List();
   }
 }
@@ -461,14 +466,23 @@ class PainterController extends ChangeNotifier {
 class PathPoints {
   double startX;
   double startY;
-  List<double> lineToX = new List<double>();
-  List<double> lineToY = new List<double>();
+  List<double> lineToX = [];
+  List<double> lineToY = [];
   String paintingStyle;
   double lineThicknes;
   int lineColor;
   bool singlePoint = true;
 
-  PathPoints({this.startX, this.startY, this.lineToX, this.lineToY, this.paintingStyle, this.lineThicknes, this.lineColor, this.singlePoint});
+  PathPoints({
+    required this.startX,
+    required this.startY,
+    required this.lineToX,
+    required this.lineToY,
+    required this.paintingStyle,
+    required this.lineThicknes,
+    required this.lineColor,
+    required this.singlePoint
+  });
 
   Map<String, dynamic> toJson() =>
       {
@@ -484,10 +498,10 @@ class PathPoints {
 
   factory PathPoints.fromJson(Map<String, dynamic> parsedJson) {
     var x = jsonDecode(parsedJson['lineToX'].toString());
-    if (x==null) {x = new List<String>();};
+    if (x==null) {x = [];}
 
     var y = jsonDecode(parsedJson['lineToY'].toString());
-    if (y==null) {y = new List<String>();};
+    if (y==null) {y = [];}
 
     return PathPoints(
         startX: parsedJson["startX"],
@@ -508,7 +522,12 @@ class MyPaths {
   int backGroundColor;
   List<PathPoints> pathPoints;
 
-  MyPaths({this.width, this.height, this.backGroundColor, this.pathPoints});
+  MyPaths({
+    required this.width,
+    required this.height,
+    required this.backGroundColor,
+    required this.pathPoints
+  });
 
   Map<String, dynamic> toJson() =>
       {
@@ -525,14 +544,14 @@ class MyPaths {
       var list = parsedJson['pathPoints'] as List;
       pathPoints = list.map((i) => PathPoints.fromJson(i)).toList();
     } else {
-      pathPoints = new List<PathPoints>();
+      pathPoints = [];
     }
 
-  return MyPaths(
-    width: parsedJson["width"],
-    height: parsedJson["height"],
-    backGroundColor: parsedJson["backGroundColor"],
-    pathPoints: pathPoints,
-  );
+    return MyPaths(
+      width: parsedJson["width"],
+      height: parsedJson["height"],
+      backGroundColor: parsedJson["backGroundColor"],
+      pathPoints: pathPoints,
+    );
   }
 }

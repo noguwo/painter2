@@ -454,10 +454,11 @@ class PainterController extends ChangeNotifier {
   }
 
   Future<Uint8List> exportAsPNGBytes() async {
+    final pixelRatio = MediaQuery.of(_globalKey.currentContext!).devicePixelRatio;
     //TODO: check boundary on null!
     RenderRepaintBoundary? boundary =
         _globalKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    Image image = await boundary.toImage();
+    Image image = await boundary.toImage(pixelRatio: pixelRatio);
     ByteData byteData = (await image.toByteData(format: ImageByteFormat.png))!;
     return byteData.buffer.asUint8List();
   }
